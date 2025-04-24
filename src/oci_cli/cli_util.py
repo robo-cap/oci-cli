@@ -423,9 +423,13 @@ def create_config_and_signer_based_on_click_context(ctx):
         # OCI_RESOURCE_PRINCIPAL_RPST_ENDPOINT
         if ctx.obj['region']:
             client_config["region"] = ctx.obj['region']
+        else:
+            client_config["region"] = os.environ.get("OCI_RESOURCE_PRINCIPAL_REGION", None)
         if ctx.obj['debug']:
             logger.debug("auth: resource_principal")
-        signer = oci.auth.signers.resource_principals_signer.get_resource_principals_signer()
+        
+        # If ctx.obj['region'] is None, the SDK falls back to the OCI_RESOURCE_PRINCIPAL_REGION environment variable.
+        signer = oci.auth.signers.resource_principals_signer.get_resource_principals_signer(region=ctx.obj['region'])
     elif oke_workload_identity_auth:
         # The following environment variables are expected to be set for this to work.
         #
@@ -433,7 +437,10 @@ def create_config_and_signer_based_on_click_context(ctx):
         # KUBERNETES_SERVICE_HOST
         # OCI_RESOURCE_PRINCIPAL_REGION
         # OCI_KUBERNETES_SERVICE_ACCOUNT_TOKEN_PATH or OCI_KUBERNETES_SERVICE_ACCOUNT_TOKEN_STRING in case token path other than default "/var/run/secrets/kubernetes.io/serviceaccount/token" or token string is used
-
+        if ctx.obj['region']:
+            client_config["region"] = ctx.obj['region']
+        else:
+            client_config["region"] = os.environ.get("OCI_RESOURCE_PRINCIPAL_REGION", None)
         if ctx.obj['debug']:
             logger.debug("auth: oke_workload_identity")
 
@@ -441,8 +448,9 @@ def create_config_and_signer_based_on_click_context(ctx):
 
         service_account_token_path = os.environ.get(cli_constants.OCI_KUBERNETES_SERVICE_ACCOUNT_TOKEN_PATH_ENV_VAR, None)
         service_account_token = os.environ.get(cli_constants.OCI_KUBERNETES_SERVICE_ACCOUNT_TOKEN_STRING_ENV_VAR, None)
-
-        signer = oci.auth.signers.get_oke_workload_identity_resource_principal_signer(service_account_token_path=service_account_token_path, service_account_token=service_account_token)
+        
+        # If ctx.obj['region'] is None, the SDK falls back to the OCI_RESOURCE_PRINCIPAL_REGION environment variable.
+        signer = oci.auth.signers.get_oke_workload_identity_resource_principal_signer(service_account_token_path=service_account_token_path, service_account_token=service_account_token, region=ctx.obj['region'])
     kwargs['signer'] = signer
 
     try:
